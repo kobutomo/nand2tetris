@@ -2,3 +2,4 @@
 *.out
 *.tst
 *.cmp
+04/**/*.hack
