@@ -39,5 +39,34 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // Instruction stracture: `i xx a cccccc ddd jjj`
+    Mux16(a[15]=false, a[0..14]=instruction[0..14], b=feedback, sel=instruction[15], out=inA);
+    Not(in=instruction[15], out=ainst);
+    // write A(write A flag and C instruction)
+    And(a=instruction[5], b=instruction[15], out=writeA);
+    // write A or A instruction
+    Or(a=writeA, b=ainst, out=loadA);
+    // Register A
+    ARegister(in=inA, load=loadA, out=outA, out[0..14]=addressM, out=inPC);
+    // if a=0 then A->ALU else M->ALU
+    Mux16(a=outA, b=inM, sel=instruction[12], out=inALU1);
+    // write D(write D flag and C instruction)
+    And(a=instruction[15], b=instruction[4], out=writeD);
+    // register D
+    DRegister(in=feedback, load=writeD, out=inALU2);
+    //ALU
+    ALU(x=inALU2, y=inALU1, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=feedback, out=outM,out=outALU, zr=isZero, ng=negative);
+    // pc
+    // it has JUMP or not
+    And(a=isZero, b=instruction[1], out=j1);
+    And(a=negative, b=instruction[2], out=j2);
+    Or(a=negative, b=isZero, out=zeroOrNegative);
+    Not(in=zeroOrNegative, out=positive);
+    And(a=positive, b=instruction[0], out=j3);
+    Or(a=j1, b=j2, out=j4);
+    Or(a=j3, b=j4, out=j5);
+    And(a=instruction[15], b=j5, out=jump);
+    Not(in=jump, out=notJump);
+    PC(in=inPC, load=jump, inc=notJump, reset=reset, out[0..14]=pc);
+    And(a=instruction[15], b=instruction[3], out=writeM);
 }
